@@ -5,6 +5,12 @@ import { SignUpInput } from './dto/signup-input';
 import { UpdateAuthInput } from './dto/update-auth.input';
 import { SignResponse } from './dto/sign-reponse';
 import { SignInInput } from './dto/signin-input';
+import { LogoutResponse } from './dto/logout-response';
+import { NewTokenResponse } from './dto/new-token-response';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { CurrentUserId } from './decorators/current-user-id.decorator';
+import { UseGuards } from '@nestjs/common';
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
 
 @Resolver(() => Auth)
 export class AuthResolver {
@@ -20,18 +26,17 @@ export class AuthResolver {
     return this.authService.signin(signInInput);
   }
 
-  @Query(() => SignResponse)
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.authService.findOne(id);
+  @Mutation(() => LogoutResponse)
+  logout(@Args('id', {type: () => Int}) id: number) {
+    return this.authService.logout(id);
   }
 
-  @Mutation(() => Auth)
-  updateAuth(@Args('updateAuthInput') updateAuthInput: UpdateAuthInput) {
-    return this.authService.update(updateAuthInput.id, updateAuthInput);
-  }
-
-  @Mutation(() => Auth)
-  removeAuth(@Args('id', { type: () => Int }) id: number) {
-    return this.authService.remove(id);
+  @UseGuards(RefreshTokenGuard)
+  @Mutation(() => NewTokenResponse)
+  getNewTokens(
+    @CurrentUserId() userId: number,
+    @CurrentUser('refreshToken') refreshToken: string
+  ) {
+    this.authService.getNewTokens(userId, refreshToken);
   }
 }
